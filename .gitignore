@@ -4,3 +4,8 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+__pycache__/
+.pytest_cache/
+bridge/config.json
+bridge/diario/
+bridge/.venv/

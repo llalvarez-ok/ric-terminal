@@ -14,6 +14,7 @@ import { CryptoTable } from "./CryptoTable";
 import { DetailPanel, type Selection } from "./DetailPanel";
 import { Movers } from "./Movers";
 import { type Dolar, TopBar } from "./TopBar";
+import { Trading } from "./trading/Trading";
 
 type CedearResponse = { rows: CedearRow[]; cclMedian: number | null; missing: string[]; fetchedAt: number };
 
@@ -23,7 +24,8 @@ export function Terminal() {
   const [extraRatios, setExtraRatios] = useStored<Record<string, number>>("ric.ratios", {});
   const [selection, setSelection] = useStored<Selection | null>("ric.selection", { kind: "cedear", ticker: "SPY" });
   const [frame, setFrame] = useStored<Frame>("ric.frame", "6M");
-  const [toasts, setToasts] = useState<{ id: number; text: string }[]>([]);
+  const [toasts, setToasts] = useState<{ id: number; text: string; icon: string }[]>([]);
+  const [tab, setTab] = useStored<"mercado" | "trading">("ric.tab", "mercado");
 
   const ratiosParam = Object.entries(extraRatios)
     .map(([t, r]) => `${t}:${r}`)
@@ -47,9 +49,10 @@ export function Terminal() {
     return p;
   }, [cedearRows, cryptoRows]);
 
-  const toast = useCallback((text: string) => {
+  const toast = useCallback((text: string, ok?: boolean) => {
     const id = Date.now() + Math.random();
-    setToasts((t) => [...t, { id, text }]);
+    const icon = ok === undefined ? "🔔" : ok ? "✅" : "⚠️";
+    setToasts((t) => [...t, { id, text, icon }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 12_000);
   }, []);
   const alerts = useAlerts(prices, toast);
@@ -62,7 +65,8 @@ export function Terminal() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT") {
+      if (tab !== "mercado") return;
+      if (target.tagName === "INPUT" || target.tagName === "SELECT") {
         if (e.key === "Escape") target.blur();
         return;
       }
@@ -91,7 +95,7 @@ export function Terminal() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selection, setSelection, setFrame]);
+  }, [selection, setSelection, setFrame, tab]);
 
   const addCedear = (raw: string): string | null => {
     const [t, r] = raw.trim().toUpperCase().split(/\s+/);
@@ -124,8 +128,9 @@ export function Terminal() {
 
   return (
     <div className="app">
-      <TopBar dolares={dolar.data} cclLista={cedears.data?.cclMedian ?? null} cryptoLive={crypto.live} />
-      <main className="layout">
+      <TopBar dolares={dolar.data} cclLista={cedears.data?.cclMedian ?? null} cryptoLive={crypto.live} tab={tab} onTab={setTab} />
+      {tab === "trading" ? <Trading onToast={toast} /> : null}
+      <main className="layout" hidden={tab !== "mercado"}>
         <section className="col-main">
           <div className="panel">
             <div className="panel-head">
@@ -194,7 +199,7 @@ export function Terminal() {
           />
         </aside>
       </main>
-      <footer className="footer muted small">
+      <footer className="footer muted small" hidden={tab !== "mercado"}>
         <span>
           Teclas: ↑ ↓ moverse · Tab cambiar de tabla · 1–6 marco del gráfico · / agregar CEDEAR · A alerta · Esc salir del campo
         </span>
@@ -203,7 +208,7 @@ export function Terminal() {
       <div className="toasts">
         {toasts.map((t) => (
           <div key={t.id} className="toast">
-            🔔 {t.text}
+            {t.icon} {t.text}
           </div>
         ))}
       </div>

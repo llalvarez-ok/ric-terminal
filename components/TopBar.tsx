@@ -13,7 +13,17 @@ const CASAS: { casa: string; label: string }[] = [
   { casa: "blue", label: "Blue" },
 ];
 
-export function TopBar({ dolares, cclLista, cryptoLive }: { dolares: Dolar[] | null; cclLista: number | null; cryptoLive: boolean }) {
+type Tab = "mercado" | "trading";
+
+type Props = {
+  dolares: Dolar[] | null;
+  cclLista: number | null;
+  cryptoLive: boolean;
+  tab: Tab;
+  onTab: (t: Tab) => void;
+};
+
+export function TopBar({ dolares, cclLista, cryptoLive, tab, onTab }: Props) {
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => {
     setNow(new Date());
@@ -30,6 +40,13 @@ export function TopBar({ dolares, cclLista, cryptoLive }: { dolares: Dolar[] | n
         <img src="/logo.svg" alt="Real Investors Club" />
         <span>Terminal</span>
       </div>
+      <nav className="tabs">
+        {(["mercado", "trading"] as const).map((t) => (
+          <button key={t} className={t === tab ? "on" : ""} onClick={() => onTab(t)}>
+            {t === "mercado" ? "Mercado" : "Trading"}
+          </button>
+        ))}
+      </nav>
       <div className="clock">{now ? timeAR(now.getTime(), true) : "--:--:--"}</div>
       <div className="markets">
         {now &&

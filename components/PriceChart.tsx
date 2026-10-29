@@ -5,7 +5,9 @@ import {
   createChart,
   HistogramSeries,
   type IChartApi,
+  type IPriceLine,
   type ISeriesApi,
+  LineStyle,
   LineSeries,
   type UTCTimestamp,
 } from "lightweight-charts";
@@ -24,11 +26,19 @@ const COLORS = {
   sma50: "#8e7140",
 };
 
-type Props = { candles: Candle[]; showSma: boolean; precision?: number };
+export type ChartLine = { price: number; color: string; title: string; dashed?: boolean };
+
+type Props = {
+  candles: Candle[];
+  showSma: boolean;
+  precision?: number;
+  lines?: ChartLine[]; // entrada, SL y TP de posiciones y órdenes
+  onPriceClick?: (price: number) => void;
+};
 
 const t = (s: number) => (s + ART) as UTCTimestamp;
 
-export function PriceChart({ candles, showSma, precision = 2 }: Props) {
+export function PriceChart({ candles, showSma, precision = 2, lines = [], onPriceClick }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const chart = useRef<IChartApi | null>(null);
   const series = useRef<{
@@ -38,6 +48,9 @@ export function PriceChart({ candles, showSma, precision = 2 }: Props) {
     sma50: ISeriesApi<"Line">;
   } | null>(null);
   const lastFirst = useRef<number | null>(null);
+  const priceLines = useRef<IPriceLine[]>([]);
+  const clickRef = useRef(onPriceClick);
+  clickRef.current = onPriceClick;
 
   useEffect(() => {
     if (!el.current) return;
@@ -74,8 +87,14 @@ export function PriceChart({ candles, showSma, precision = 2 }: Props) {
       sma50: c.addSeries(LineSeries, { color: COLORS.sma50, lineWidth: 1, lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false }),
     };
     c.priceScale("vol").applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
+    c.subscribeClick((param) => {
+      if (!param.point || !clickRef.current || !series.current) return;
+      const price = series.current.candles.coordinateToPrice(param.point.y);
+      if (price != null) clickRef.current(Number(price.toFixed(precision)));
+    });
     chart.current = c;
     return () => {
+      priceLines.current = [];
       c.remove();
       chart.current = null;
       series.current = null;
@@ -104,6 +123,24 @@ export function PriceChart({ candles, showSma, precision = 2 }: Props) {
       lastFirst.current = first;
     }
   }, [candles, showSma]);
+
+  const linesKey = JSON.stringify(lines);
+  useEffect(() => {
+    const s = series.current;
+    if (!s) return;
+    for (const l of priceLines.current) s.candles.removePriceLine(l);
+    priceLines.current = lines.map((l) =>
+      s.candles.createPriceLine({
+        price: l.price,
+        color: l.color,
+        title: l.title,
+        lineWidth: 1,
+        lineStyle: l.dashed ? LineStyle.Dashed : LineStyle.Solid,
+        axisLabelVisible: true,
+      }),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linesKey, precision]);
 
   return <div ref={el} className="chart" />;
 }

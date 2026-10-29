@@ -1,6 +1,9 @@
 # RIC Terminal
 
-Terminal personal de mercado al estilo Bloomberg para seguir **CEDEARs y cripto** con datos reales.
+Terminal personal de mercado al estilo Bloomberg. Tiene dos pestañas:
+
+- **Mercado:** CEDEARs y cripto con datos reales, para analizar.
+- **Trading:** forex, metales y cripto en tus cuentas de MetaTrader 5 (Exness y BlackBull), con órdenes reales.
 
 ![Vista general](docs/vista.png)
 
@@ -36,17 +39,37 @@ Terminal personal de mercado al estilo Bloomberg para seguir **CEDEARs y cripto*
 
 Las columnas se ordenan con un clic en el encabezado. La lista, las alertas y el último papel elegido quedan guardados en el navegador.
 
+## Pestaña Trading (MetaTrader 5)
+
+Se conecta a cada MT5 abierto en tu PC a través de un puente en Python (`bridge/`). Instalación y uso: [`bridge/LEEME.md`](bridge/LEEME.md). Para arrancar todo junto: `iniciar.ps1`.
+
+- **Cuentas:** balance, equity, resultado abierto, margen y nivel de margen de cada cuenta, en vivo. Botones de pausa y de "Cerrar todo".
+- **Mercado por cuenta:** bid, ask, spread y variación del día de forex, oro, plata, platino, cobre y cripto, con el nombre que usa cada bróker (por ejemplo `XAUUSDm` en Exness).
+- **Gráfico** con los precios del bróker (M5 a W1), las medias de 20 y 50, y las líneas de entrada, SL y TP de tus posiciones y de la orden que estás armando. Un clic en el gráfico fija el SL, el TP o el precio.
+- **Boleta de órdenes:**
+  - Compra o venta, a mercado, límite o stop.
+  - **SL obligatorio**, con atajos a 1, 1,5 o 2 ATR; TP opcional, con atajos a 1:1, 1:2 o 1:3.
+  - Tamaño por % de riesgo, por monto de riesgo o por lotes. Muestra antes de enviar los lotes, la pérdida en el SL, la ganancia en el TP, el R:R y el margen.
+  - **Confirmar antes de enviar**, activable. Apagado, la orden sale con un clic (ejecución directa).
+  - **También en la otra cuenta:** la misma operación en Exness y BlackBull a la vez, con el tamaño calculado para el balance de cada una.
+- **Posiciones y pendientes** de las dos cuentas: mover SL o TP, cerrar la mitad, cerrar, cancelar.
+- **Diario** de cada orden en `bridge/diario/`, para analizar después.
+
+Las órdenes pendientes (límite y stop) quedan en el servidor del bróker: se ejecutan aunque la PC esté apagada.
+
 ## Cómo usarla en tu PC
 
 Necesitás [Node.js](https://nodejs.org) 20 o más nuevo.
 
-```bash
+En PowerShell, uno por uno:
+
+```powershell
 npm install
 npm run build
 npm start
 ```
 
-Y abrís http://localhost:3000. Para desarrollo, `npm run dev`.
+Y abrís http://localhost:3000. Para desarrollo, `npm run dev`. Con la pestaña Trading, usá `iniciar.ps1`, que además levanta los puentes.
 
 ## Agregar papeles
 
@@ -73,10 +96,13 @@ Todas son gratuitas y no piden cuenta. Limitaciones conocidas:
 app/api/cedears   precios de BYMA y EE.UU., CCL implícito e indicadores
 app/api/history   velas de Yahoo para el gráfico
 app/api/dolar     cotizaciones del dólar
+app/api/trade     pasarela hacia los puentes de MT5 (pone el token y bloquea pedidos de otras páginas)
+bridge/           puente con MetaTrader 5 en Python, MT5 simulado y sus pruebas
+components/trading/  cuentas, boleta de órdenes y posiciones
 components/       tablas, gráfico, panel de detalle, alertas
 hooks/            sondeo, WebSocket de Binance, alertas, almacenamiento
 lib/              indicadores, métricas, ratios, formato y lectura rápida
-tests/            pruebas de los cálculos (npm test)
+tests/            pruebas de los cálculos (npm test; las del puente con pytest)
 ```
 
 ## Ideas para seguir
@@ -87,4 +113,4 @@ tests/            pruebas de los cálculos (npm test)
 - Avisos a Telegram cuando la PC no está abierta.
 
 ---
-Herramienta de uso personal. La información es descriptiva y no constituye recomendación de inversión.
+Herramienta de uso personal. La pestaña Mercado es descriptiva y no constituye recomendación de inversión. En Trading, cada orden es decisión de quien la envía: forex, metales y cripto por CFD se operan apalancados y se puede perder más rápido de lo que se gana.

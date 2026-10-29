@@ -1,0 +1,12 @@
+{
+  "default": {
+    "max_riesgo_pct": 2.0,
+    "max_lotes": 5.0,
+    "max_ordenes_por_minuto": 10,
+    "desvio_puntos": 20,
+    "magic": 261029,
+    "huso_servidor_horas": null
+  },
+  "exness": {},
+  "blackbull": {}
+}

@@ -106,3 +106,12 @@ test("volumen relativo a mitad de rueda", async () => {
   assert.equal(sessionElapsed(t, t), 0.5);
   assert.equal(sessionElapsed(t - 86400, t), 1);
 });
+
+test("símbolos con el sufijo de cada bróker", async () => {
+  const { resolveSymbol } = await import("../lib/trade.ts");
+  const exness = ["EURUSDm", "XAUUSDm", "XAGUSDm", "BTCUSDm", "XAUUSDmicro"];
+  assert.equal(resolveSymbol("XAUUSD", exness), "XAUUSDm");
+  assert.equal(resolveSymbol("EURUSD", ["EURUSD.r", "EURUSD"]), "EURUSD");
+  assert.equal(resolveSymbol("XCUUSD", ["COPPER", "XAUUSD"], ["COPPER"]), "COPPER");
+  assert.equal(resolveSymbol("XPTUSD", exness), null);
+});
