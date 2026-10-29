@@ -1,0 +1,59 @@
+// Ratios de conversión de CEDEARs: cuántos CEDEARs equivalen a una acción
+// o ETF del exterior. "1:3" significa que un CEDEAR representa 3 acciones.
+// Fuente: listado de Rankia sincronizado con BYMA (septiembre de 2026).
+// Los ratios cambian con splits: la terminal avisa cuando el CCL implícito
+// de un papel se aleja demasiado del resto (ver lib/metrics.ts).
+const RAW = `
+AAL 2|AAP 14|AAPL 20|ABBV 10|ABEV 1:3|ABNB 15|ABT 4|ACN 75|ACWI 26|ADBE 44|ADI 15|ADP 6
+AEM 6|AI 5|AIG 5|ALAB 44|AMAT 5|AMD 10|AMGN 30|AMX 1:1|AMZN 144|ANET 29|ARKK 10|ARM 27
+ASML 146|ASR 20|ASTS 15|AVGO 39|AXP 15|AZN 4|B 2|BA 24|BABA 9|BBD 1:1|BCS 1:1|BHP 2
+BIDU 11|BIOX 1:1|BK 2|BKNG 700|BKR 7|BMNR 8|BMY 3|BP 5|BRKB 22|BSBR 1:1|BX 30|C 3
+CAAP 1:4|CAT 20|CCJ 23|CDE 1:1|CEG 45|CIBR 10|CL 3|CLS 20|COIN 27|COP 25|COPX 14|COST 48
+CRM 18|CRWD 79|CRWV 27|CSCO 5|CVS 15|CVX 16|CX 1:1|DAL 8|DD 5|DE 40|DECK 25|DELL 74
+DEO 6|DHR 54|DIA 20|DISN 12|DOCU 22|DOW 6|EA 14|EBAY 2|ECL 56|EEM 5|EFA 18|EQNR 6
+ERIC 2|ERJ 1:1|ETHA 5|ETSY 16|EWJ 14|EWY 50|EWZ 2|F 1:1|FCX 3|FDX 10|FMX 6|FSLR 18
+FXI 5|GDX 10|GE 8|GEV 180|GFI 1:1|GILD 4|GLD 50|GLOB 18|GLW 41|GM 6|GOOGL 58|GPRK 1:1
+GRMN 3|GS 13|GSK 4|HAL 2|HD 32|HDB 2|HIMS 4|HL 1:1|HMC 1:1|HMY 1:1|HOG 3|HON 8|HOOD 29
+HPQ 1:1|HSBC 2|HSY 21|HUT 5|HWM 1:1|IBB 27|IBIT 10|IBKR 17|IBM 15|IBN 1:1|ICLN 5|IEMG 12
+IEUR 11|IJH 12|ILF 6|INFY 1:1|ING 3|INTC 5|IREN 12|ISRG 90|ITA 50|ITUB 1:1|IWM 10|JD 4
+JMIA 1:1|JNJ 15|JPM 15|KGC 1:1|KLAC 34|KMB 6|KO 5|LAC 1:1|LIN 102|LLY 56|LMT 20|LRCX 56
+LVS 2|MA 33|MCD 24|MDLZ 15|MDT 4|MELI 120|META 24|MMM 10|MO 4|MOS 5|MP 10|MRK 5|MRNA 19
+MRVL 14|MS 41|MSFT 30|MSTR 20|MU 5|NBIS 27|NEE 19|NEM 3|NFLX 48|NIO 4|NKE 12|NOW 172
+NTES 14|NU 2|NUE 16|NVDA 24|NVO 7|NVS 4|OKLO 28|ORCL 3|ORLY 222|OXY 5|PAAS 3|PAGS 3
+PANW 50|PBR 1:1|PDD 25|PEP 18|PFE 4|PG 15|PINS 7|PLTR 3|PM 18|PYPL 8|QCOM 11|QQQ 20
+RACE 83|RBLX 2|RGTI 2|RIO 8|RIOT 3|RKLB 12|ROKU 13|RTX 5|SAN 1:4|SAP 6|SATL 1:1|SBUX 12
+SCCO 2|SE 32|SHEL 2|SHOP 107|SLB 3|SLV 6|SMH 50|SNOW 30|SONY 8|SPGI 45|SPOT 28|SPY 60
+STNE 3|SUZ 1:1|T 3|TEAM 47|TGT 24|TM 15|TMO 22|TQQQ 25|TSLA 15|TSM 9|TTE 3|TWLO 36
+UBER 2|UL 3|UNH 33|UNP 20|UPST 5|URA 5|USB 5|USO 15|V 18|VALE 2|VEA 10|VIST 3|VOD 1:1
+VRTX 101|VST 26|VZ 4|WBA 3|WDC 92|WFC 5|WMT 18|XLB 18|XLC 19|XLE 2|XLF 2|XLI 28|XLK 46
+XLP 16|XLRE 9|XLU 15|XLV 29|XLY 43|XOM 10|XP 4|XPEV 4|XYZ 20|ZM 47
+`;
+
+export const RATIOS: Record<string, number> = Object.fromEntries(
+  RAW.trim()
+    .split(/[|\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const [ticker, r] = entry.split(" ");
+      const [a, b] = r.split(":").map(Number);
+      return [ticker, b === undefined ? a : a / b];
+    }),
+);
+
+// Tickers locales cuyo símbolo en EE.UU. es distinto.
+const US_SYMBOL: Record<string, string> = {
+  BRKB: "BRK-B",
+  DISN: "DIS",
+};
+
+export function usSymbol(local: string): string {
+  return US_SYMBOL[local] ?? local;
+}
+
+export const DEFAULT_CEDEARS = [
+  "SPY", "QQQ", "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA",
+  "MELI", "AMD", "PLTR", "BRKB", "KO", "VIST", "GLD", "IBIT", "XLE",
+];
+
+export const DEFAULT_CRYPTO = ["BTC", "ETH", "SOL", "BNB", "XRP", "ADA", "DOGE", "LINK"];
